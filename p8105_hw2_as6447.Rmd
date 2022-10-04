@@ -31,32 +31,91 @@ NYC_transit_data =
 nrow(NYC_transit_data)
 ncol(NYC_transit_data)
 ```
-Write a short paragraph about this dataset – explain briefly what variables the dataset contains, describe your data cleaning steps so far, and 
 
-Give the dimension (rows x columns) of the resulting dataset. Are these data tidy?
+From the use of `nrow` and `ncol` we find that there are 20 columns (variables) and 1868 rows (observations). It provides geographic data about where stations are located (ie station name, longitude/latitude), the characteristics of those locations (ie what type of entry do they have, are they ADA compliant, are there vending machines in the station), and the subway lines that run through the stations and the routes they follow. Cleaning the data required converting the variables to snake case (so that I can actually manipulate the variables without increasing my blood pressure), then I restricted the data set to only the required variables. Finally, I converted the entry variable to a logical variable. 
 
-SOLUTION: In the console I viewed the dataset and found what the dataset contains inside of it, with the total 
+The data itself is not tidy considering the routes variables which are in `pivot_wider` so that each route is its own variable. It would be more efficient and "tidier" to `Pivot_longer`.
 
 
-Answer the following questions using these data:
-How many distinct stations are there? Note that stations are identified both by name and by line (e.g. 125th St 8th Avenue; 125st Broadway; 125st Lenox); the distinct function may be useful here.
-How many stations are ADA compliant?
-What proportion of station entrances / exits without vending allow entrance?
+1.How many distinct stations are there? Note that stations are identified both by name and by line (e.g. 125th St 8th Avenue; 125st Broadway; 125st Lenox); the distinct function may be useful here.
 ```{r}
+NYC_transit_data %>% distinct(line,station_name)
+```
+There are 465 unique stations (found in the console after running the above code chunk)
+
+2.How many stations are ADA compliant?
+```{r}
+NYC_transit_data %>% filter(ada == TRUE) %>% distinct(line,station_name)
+```
+
+84 stations are found to be ADA Compliant. 
+
+3.What proportion of station entrances / exits without vending allow entrance?
+```{r}
+NYC_transit_data %>% 
+  filter(vending =='NO')%>%
+  pull(entry)%>%
+  mean()
+```
+The proportion of station entrances/exit without vending allow entrances is 0.377049 (37.70% of station entrances and exits are without vending allowed)
+
+4.Reformat data so that route number and route name are distinct variables. 
+
+How many distinct stations serve the A train? 
+
+Of the stations that serve the A train, How many are ADA compliant? FINSIH
+```{r}
+NYC_transit_data %>%
+  pivot_longer(
+    NYC_transit_data, 
+    route1:route11,
+    names_to == 'route_name',
+    values_to == 'route_number')
 
 ```
-SOLUTION:
 
-Reformat data so that route number and route name are distinct variables. How many distinct stations serve the A train? Of the stations that serve the A train, how many are ADA compliant?
 ```{r}
+NYC_transit_data %>% 
+  filter(route_number == "A")%>%
+  select(station_name,line) %>%
+distinct
 
+NYC_transit_data %>% 
+  filter(route_number == "A", ada == TRUE) %>% 
+  select(station_name, line) %>% 
+  distinct
 ```
+
+There are 60 stations and lines that serve the A train and 17 stations that are ADA compliant.
+
 
 ##Problem 2
 
 
 ```{r pressure,}
-trash_wheel_data = read_excel("data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx")
+trash_wheel_data = read_excel("data/Trash Wheel Collection Data.xlsx") 
+
+
 ```
+A.Read and clean the Mr. Trash Wheel sheet:
+
+
+1.specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
+2.use reasonable variable names
+3.omit rows that do not include dumpster-specific data
+4.round the number of sports balls to the nearest integer and converts the result to an integer variable (using as.integer)
+
+B.Use a similar process to import, clean, and organize the data for Professor Trash Wheel 
+
+Combine this with the Mr. Trash Wheel dataset to produce a single tidy dataset. 
+
+To keep track of which Trash Wheel is which, you may need to add an additional variable to both datasets before combining.
+
+C. Write a paragraph about these data; You are encouraged to use inline R.
+
+Be sure to note the number of observations in the resulting dataset
+Give examples of key variables. 
+For available data, what was the total weight of trash collected by Professor Trash Wheel? 
+What was the total number of sports balls collected by Mr. Trash Wheel in 2020?
 
 ##Problem 3
