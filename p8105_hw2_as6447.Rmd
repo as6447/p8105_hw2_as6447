@@ -90,28 +90,35 @@ There are 60 stations and lines that serve the A train and 17 stations that are 
 
 
 ##Problem 2
-
-
-```{r pressure,}
-trash_wheel_data = read_excel("data/Trash Wheel Collection Data.xlsx") 
-
-
-```
 A.Read and clean the Mr. Trash Wheel sheet:
-
-
 1.specify the sheet in the Excel file and to omit non-data entries (rows with notes / figures; columns containing notes) using arguments in read_excel
 2.use reasonable variable names
 3.omit rows that do not include dumpster-specific data
 4.round the number of sports balls to the nearest integer and converts the result to an integer variable (using as.integer)
+```{r pressure,}
+trash_wheel_data = 
+  readxl::read_excel("data/Trash Wheel Collection Data.xlsx", range = "A2:N549",col)
+```
+This sheet initially has 548 observations and we have been given 16 variables, two of which where empty variables. We removed these variables
+```{r}
+trash_wheel_data = 
+  read_excel("data/Trash Wheel Collection Data.xlsx",range = cell_cols(1:14))%>%
+  janitor::clean_names()
+```
 
 B.Use a similar process to import, clean, and organize the data for Professor Trash Wheel 
+```{r}
+
+```
 
 Combine this with the Mr. Trash Wheel dataset to produce a single tidy dataset. 
 
 To keep track of which Trash Wheel is which, you may need to add an additional variable to both datasets before combining.
 
 C. Write a paragraph about these data; You are encouraged to use inline R.
+```{r}
+
+```
 
 Be sure to note the number of observations in the resulting dataset
 Give examples of key variables. 
