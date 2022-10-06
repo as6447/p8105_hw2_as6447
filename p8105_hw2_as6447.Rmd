@@ -12,6 +12,7 @@ knitr::opts_chunk$set(collapse = TRUE, message = FALSE)
 ```{r}
 library(tidyverse)
 library(readxl)
+library(lubridate)
 ```
 
 ##Problem 1
@@ -114,6 +115,7 @@ Professor_Trash_Wheel =
   readxl::read_excel("data/Trash Wheel Collection Data.xlsx", "Professor Trash Wheel", range = "A2:M96")%>%
   janitor::clean_names()%>%
   drop_na()%>%
+  paste(year(parse_date_time(year,)))
   mutate(
     year = as.character(year),
     sheet_type= 'Professor_trash_wheel'
@@ -122,8 +124,8 @@ Professor_Trash_Wheel =
 Please note that I converted the year variable to a character here so that the two data sets are consistent with each other. I then created the `sheet_type` variable so that I could properly differentiate between the two when I merged them later. I dropped any rows that did not include dumpster-specific data as well. And conveted the variables to snake case.
 
 ```{r}
-trash_wheel_full =
-  full_join(Professor_Trash_Wheel, Mr_Trash_Wheel)
+trash_wheel_bind =
+  bind_rows(Professor_Trash_Wheel, Mr_Trash_Wheel)
 ```
 
 C. Write a paragraph about these data; You are encouraged to use inline R.
@@ -133,16 +135,17 @@ Give examples of key variables.
 In our new dataset there are 568 observations and 15 variables. Certain notable  
 
 ```{r}
-trash_wheel_full %>% 
+trash_wheel_bind %>% 
   filter(sheet_type == 'Professor_trash_wheel')%>%
   pull(weight_tons)%>%
   sum()
 ```
 Utilizing `trash_wheel_bind %>% filter(sheet_type == 'Professor_trash_wheel')%>% pull(weight_tons)%>% sum()` it was found that the total weight of trash collected by Professor Trash Wheel was 162.54 tons. This was 
 ```{r}
-trash_wheel_full %>% 
+trash_wheel_bind %>% 
   filter(sheet_type == 'Mr_trash_wheel', year=='2020')%>%
   pull(sports_balls)%>%
+  sum()
 ```
 
 In 2020 Mr. Trash Wheel collected 856 sports balls. 
@@ -161,24 +164,59 @@ Use separate() to break up the variable mon into integer variables year, month, 
 
 replace month number with month name; 
 
-create a president variable taking values gop and dem, and 
-
-remove prez_dem and prez_gop; and 
-
-remove the day variable.
+create a president variable taking values gop and dem, and remove prez_dem and prez_gop; and remove the day variable.
 ```{r}
 pols_month_data = 
   read_csv('data/pols-month.csv')%>%
   janitor::clean_names()%>%
+  separate(col = mon, into=c('year','month','day'), sep='-')%>%
+  select(-day)%>%
+  mutate(
+    month = as.integer(month),
+    month = month.abb[month],
+    year = as.integer(year))%>%
+  pivot_longer(
+    prez_dem, prez_gop,
+    names
+  )%>%
+  select(-day,-prez_dem,-prez_gop)
 ```
 
-2.Second, clean the data in snp.csv using a similar process to the above. For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
+2.Second, clean the data in snp.csv using a similar process to the above. 
+
+For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
 ```{r}
-snp =
+snp = read_csv('data/snp.csv')%>%
+  janitor::clean_names()%>%
+  separate(col = date, into = c('month','day','year'), sep='/')%>%
+  mutate(
+    month = as.integer(month),
+    month = month.abb[month],
+    year = as.integer(year),
+    year_fix= case_when( year<22 ~ 2000,
+                         year>22 ~ 1900),
+    year= year+year_fix )%>%
+  relocate (year,month)%>%
+select(-day,-year_fix)
 ```
-3.Third, tidy the unemployment data so that it can be merged with the previous datasets. This process will involve switching from “wide” to “long” format; ensuring that key variables have the same name; and ensuring that key variables take the same values.
+Big shout out to Stack overflow and the TA for help here!
+
+3.Third, tidy the unemployment data so that it can be merged with the previous datasets. 
+
+This process will involve switching from “wide” to “long” format; 
+
+ensuring that key variables have the same name; and 
+
+ensuring that key variables take the same values.
 ```{r}
-unemployment_data
+unemployment_data=read_csv('data/unemployment.csv')%>%
+  janitor::clean_names()%>%
+pivot_longer(
+  jan:dec,
+  names_to = 'month', 
+    values_to = 'unemployment_percent'
+)
+
 ```
 
 4.Join the datasets by merging snp into pols, and merging unemployment into the result.
@@ -186,4 +224,8 @@ unemployment_data
 
 ```
 
-5.Write a short paragraph about these datasets. Explain briefly what each dataset contained, and describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).
+5.Write a short paragraph about these datasets. 
+
+Explain briefly what each dataset contained
+
+Describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).
