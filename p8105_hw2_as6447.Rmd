@@ -4,9 +4,11 @@ author: "Armaan Sodhi"
 date: "2022-10-03"
 output: github_document
 ---
+
 ##Problem 0
+
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse = TRUE, message = FALSE)
+knitr::opts_chunk$set(echo = TRUE)
 ```
 
 ```{r}
@@ -16,8 +18,6 @@ library(lubridate)
 ```
 
 ##Problem 1
-
-Read and clean the data; retain line, station, name, station latitude / longitude, routes served, entry, vending, entrance type, and ADA compliance. Convert the entry variable from character (YES vs NO) to a logical variable (the ifelse or recode function may be useful).
 
 ```{r cars}
 NYC_transit_data = 
@@ -33,69 +33,56 @@ nrow(NYC_transit_data)
 ncol(NYC_transit_data)
 ```
 
-From the use of `nrow` and `ncol` we find that there are 20 columns (variables) and 1868 rows (observations). It provides geographic data about where stations are located (ie station name, longitude/latitude), the characteristics of those locations (ie what type of entry do they have, are they ADA compliant, are there vending machines in the station), and the subway lines that run through the stations and the routes they follow. Cleaning the data required converting the variables to snake case (so that I can actually manipulate the variables without increasing my blood pressure), then I restricted the data set to only the required variables. Finally, I converted the entry variable to a logical variable. 
+From the use of `nrow` and `ncol` we find that there are 20 columns (variables) and 1868 rows (observations). It provides geographic data about where stations are located (ie station name, longitude/latitude), the characteristics of those locations (ie what type of entry do they have, are they ADA compliant, are there vending machines in the station), and the subway lines that run through the stations and the routes they follow. Cleaning the data required converting the variables to snake case (so that I can actually manipulate the variables without increasing my blood pressure), then I restricted the data set to only the required variables. Finally, I converted the entry variable to a logical variable.
 
 The data itself is not tidy considering the routes variables which are in `pivot_wider` so that each route is its own variable. It would be more efficient and "tidier" to `Pivot_longer`.
 
-
-1.How many distinct stations are there? Note that stations are identified both by name and by line (e.g. 125th St 8th Avenue; 125st Broadway; 125st Lenox); the distinct function may be useful here.
 ```{r}
 NYC_transit_data %>% distinct(line,station_name)
 ```
+
 There are 465 unique stations (found in the console after running the above code chunk)
 
-2.How many stations are ADA compliant?
 ```{r}
 NYC_transit_data %>% filter(ada == TRUE) %>% distinct(line,station_name)
 ```
 
-84 stations are found to be ADA Compliant. 
+84 stations are found to be ADA Compliant.
 
-3.What proportion of station entrances / exits without vending allow entrance?
 ```{r}
 NYC_transit_data %>% 
   filter(vending =='NO')%>%
   pull(entry)%>%
   mean()
 ```
+
 The proportion of station entrances/exit without vending allow entrances is 0.377049 (37.70% of station entrances and exits are without vending allowed)
 
-4.Reformat data so that route number and route name are distinct variables. 
-
-How many distinct stations serve the A train? 
-
-Of the stations that serve the A train, How many are ADA compliant? FINSIH
-
 ```{r}
-NYC_transit_data %>%
+NYC_transit_data %>% 
   pivot_longer(
-    NYC_transit_data, 
     route1:route11,
-    names_to == 'route_name',
-    values_to == 'route_number')
-
-```
-
-I reformatted the data so that the route number and names were distinct variables using the pivot_longer function. 
-
-```{r}
-NYC_transit_data %>% 
-  filter(route_number == "A")%>%
-  select(station_name,line) %>%
-distinct
+    names_to = "route_num",
+    values_to = "route") %>% 
+  filter(route == "A") %>% 
+  select(station_name, line) %>% 
+  distinct
 
 NYC_transit_data %>% 
-  filter(route_number == "A", ada == TRUE) %>% 
+  pivot_longer(
+    route1:route11,
+    names_to = "route_num",
+    values_to = "route") %>% 
+  filter(route == "A", ada == TRUE) %>% 
   select(station_name, line) %>% 
   distinct
 ```
 
 There are 60 stations and lines that serve the A train and 17 stations that are ADA compliant.
 
-
 ##Problem 2
 
-```{r pressure,}
+```{r Mr trash wheel import,clean,organize}
 Mr_Trash_Wheel = 
   readxl::read_excel("data/Trash Wheel Collection Data.xlsx", "Mr. Trash Wheel", range = "A2:N549")%>%
   janitor::clean_names()%>%
@@ -106,108 +93,81 @@ Mr_Trash_Wheel =
     sheet_type= 'Mr_trash_wheel'
     )
 ```
-This sheet initially has 548 observations and we have been given 16 variables, two of which where empty variables. We removed these variables
- and then ended up with only 14 variables. We omitted any rows that did not include dumpster-specific data. I then rounded and then converted it to an integer 
- 
-B.Use a similar process to import, clean, and organize the data for Professor Trash Wheel 
-```{r}
+
+This sheet initially has 548 observations and we have been given 16 variables, two of which where empty variables. We removed these variables and then ended up with only 14 variables. We omitted any rows that did not include dumpster-specific data. I then rounded and then converted it to an integer.
+
+```{r professor trash wheel import,clean,organize}
 Professor_Trash_Wheel = 
   readxl::read_excel("data/Trash Wheel Collection Data.xlsx", "Professor Trash Wheel", range = "A2:M96")%>%
   janitor::clean_names()%>%
   drop_na()%>%
-  paste(year(parse_date_time(year,)))
   mutate(
     year = as.character(year),
-    sheet_type= 'Professor_trash_wheel'
+    sheet_type = 'Professor_trash_wheel'
   )
 ```
-Please note that I converted the year variable to a character here so that the two data sets are consistent with each other. I then created the `sheet_type` variable so that I could properly differentiate between the two when I merged them later. I dropped any rows that did not include dumpster-specific data as well. And conveted the variables to snake case.
 
-```{r}
+Please note that I converted the year variable to a character here so that the two data sets are consistent with each other. I then created the `sheet_type` variable so that I could properly differentiate between the two when I merged them later. I dropped any rows that did not include dumpster-specific data as well. And converted the variables to snake case.
+
+```{r bind rows}
 trash_wheel_bind =
   bind_rows(Professor_Trash_Wheel, Mr_Trash_Wheel)
 ```
 
-C. Write a paragraph about these data; You are encouraged to use inline R.
-Be sure to note the number of observations in the resulting dataset
-Give examples of key variables. 
-
-In our new dataset there are 568 observations and 15 variables. Certain notable  
-
-```{r}
+```{r total trash by professor}
 trash_wheel_bind %>% 
   filter(sheet_type == 'Professor_trash_wheel')%>%
   pull(weight_tons)%>%
   sum()
 ```
-Utilizing `trash_wheel_bind %>% filter(sheet_type == 'Professor_trash_wheel')%>% pull(weight_tons)%>% sum()` it was found that the total weight of trash collected by Professor Trash Wheel was 162.54 tons. This was 
-```{r}
+
+```{r total sports balls by mr}
 trash_wheel_bind %>% 
   filter(sheet_type == 'Mr_trash_wheel', year=='2020')%>%
   pull(sports_balls)%>%
   sum()
 ```
 
-In 2020 Mr. Trash Wheel collected 856 sports balls. 
-
-To differentiate the data set 
+This consisted of data about a water wheel of two different types. There was two different wheels,`Mr_Trash_Wheel` (468 rows and 15 columns) and `Professor_Trash_Wheel` (82 rows and 14 variables). Key variables would include the `dumpster`(dumpster number), `weight_tons` (how much weight of trash in tons ), `sports_balls`(how many sports balls were collected), and `volume_cubic_yards` (the volume of trash in cubic yards that is thrown away). When the two are binded together it creates a `trash_wheel_bind` (568 rows and 15 columns). The total weight of trash collected by Professor Trash Wheel was 162.54 tons. In 2020, `Mr. Trash Wheel` collected 856 sports balls.
 
 ##Problem 3
 
-Use the data in pols-month.csv, unemployment.csv, and snp.csv. 
-
-Our goal is to merge these into a single data frame using year and month as keys across datasets.
-
-1.First, clean the data in pols-month.csv. 
-
-Use separate() to break up the variable mon into integer variables year, month, and day; 
-
-replace month number with month name; 
-
-create a president variable taking values gop and dem, and remove prez_dem and prez_gop; and remove the day variable.
-```{r}
+```{r pols}
 pols_month_data = 
   read_csv('data/pols-month.csv')%>%
   janitor::clean_names()%>%
   separate(col = mon, into=c('year','month','day'), sep='-')%>%
-  select(-day)%>%
   mutate(
     month = as.integer(month),
     month = month.abb[month],
-    year = as.integer(year))%>%
-  pivot_longer(
-    prez_dem, prez_gop,
-    names
-  )%>%
+    year = as.integer(year),
+    president = case_when( 
+      prez_dem == 1 ~ 'dem',
+      prez_gop == 1 ~ 'gop',
+      prez_gop == 2 ~ 'unknown'))%>%
   select(-day,-prez_dem,-prez_gop)
 ```
 
-2.Second, clean the data in snp.csv using a similar process to the above. 
+I separated the date data by year,month, and day. Then used mutate to change the month from numbered month to character month as well as changing year to numeric (so I could merge the datasets). Then created the president variable by using `case_when` to combine `prez_dem` and `prez_gop`. Finally, I used `select` to remove `day,prez_dem,prez_gop`.
 
-For consistency across datasets, arrange according to year and month, and organize so that year and month are the leading columns.
-```{r}
-snp = read_csv('data/snp.csv')%>%
+```{r snp}
+snp_stock_market_index = read_csv('data/snp.csv')%>%
   janitor::clean_names()%>%
   separate(col = date, into = c('month','day','year'), sep='/')%>%
   mutate(
     month = as.integer(month),
     month = month.abb[month],
     year = as.integer(year),
+    closing_value = close,
     year_fix= case_when( year<22 ~ 2000,
                          year>22 ~ 1900),
     year= year+year_fix )%>%
   relocate (year,month)%>%
-select(-day,-year_fix)
+select(-day,-year_fix,-close)
 ```
-Big shout out to Stack overflow and the TA for help here!
 
-3.Third, tidy the unemployment data so that it can be merged with the previous datasets. 
+I separated the date data by year,month, and day. Then used mutate to change the month from numbered month to character month as well as changing year to numeric (so I could merge the datasets).Renamed `close` to `closing_value`. Then I fixed `year` variable as it was 2 digits instead of 4 digits by adding either 2000 or 1900 if the year was greater than or equal to 22. Then the year and month were relocated to the front and finally `day`, `year_fix`, and the original `close` value was deleted.
 
-This process will involve switching from “wide” to “long” format; 
-
-ensuring that key variables have the same name; and 
-
-ensuring that key variables take the same values.
 ```{r}
 unemployment_data=read_csv('data/unemployment.csv')%>%
   janitor::clean_names()%>%
@@ -215,17 +175,19 @@ pivot_longer(
   jan:dec,
   names_to = 'month', 
     values_to = 'unemployment_percent'
-)
+)%>%
+  mutate(
+    month=str_to_title(month)
+  )
 
 ```
 
-4.Join the datasets by merging snp into pols, and merging unemployment into the result.
-```{r}
+For the `unemployment_data` by using the `pivot_longer` function then selected january to december creating two variables `month` and `unemployment_percent`. Finally `month` was made to have the first letter capitalized.
 
+```{r join data together}
+overall_merged_Data =
+  left_join(pols_month_data,snp_stock_market_index)%>%
+  left_join(.,unemployment_data)
 ```
 
-5.Write a short paragraph about these datasets. 
-
-Explain briefly what each dataset contained
-
-Describe the resulting dataset (e.g. give the dimension, range of years, and names of key variables).
+These datasheets consist of election data. It consists of information on politicians at the national level at a month level (ie `pols-months`-822 rows and 9 columns), the S&P stock index (`snp_stock_market_index`- 787 rows and 3 columns), and the unemployment percentages per month (`unemployment_data`-816 rows and 3 columns). The combined data consists of 822 observations with 11 different variables. These variables include `year` (1947-2022), `month`, `closing_value` (closing value of S&P index), and `president` (which political party was the president affiliated with). There were also variables for the number of: governor's, representatives, and senators that were affiliated with a particular political party.
